@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+    AWS Serverless Application
+
+    Sample SAM Template for AWS Serverless Application
+
+Paraemeters:
+  QName:
+    Description: name of SQS queue to be polled
+    Type: String
+  QURL:
+    Description: url of SQS queue to be polled
+    Type: String
+  S3Bucket:
+    Description: S3 bucket that notification are coming from for permissions
+    Type: String
+  FunctionName:
+    Description: Lambda function name
+    Type: String
+  CodeBucket:
+    Description: S3 bucket name with code for function
+    Type: String
+  CodeFile:
+    Description: S3 key of zip file of code
+    Type: String
+  Region:
+    Description: region of queue
+    Type: String
+  Account:
+    Description: account number of sqs queue
+    Type: String
+  NumMessages:
+    Description: Batch size of messages to retrieve
+    Type: Number
+    Default: 10
+  MessagePollTime:
+    Description: Time to poll for messages >1 is long polling
+    Type: Number
+    Default: 20
+    MinValue: 0
+    MaxValue: 20
+  Memory:
+    Description: memory allocated in MB
+    Type: Number
+    Default: 128
+    MinValue: 128
+    MaxValue: 3008
+  ExcTime:
+    Description: Timeout for the lambda
+    Type: Number
+    Default: 3
+    MinValue: 1
+    MaxValue: 800
+  ConcurrentExecutions:
+    Description: number of reserved concurrent executions, 0 is throttled
+    Type: Number
+    MinValue: 0
+    MaxValue: 1000
+    Default: !Ref "AWS::NoValue"
+  LambdaLayers:
+    Description: list of arns of lambda layers
+    Type: CommaDelimitedList
+
+
+Resources:
+
+  LambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Join ["-",[!Ref FunctionName, "lambda","execution"]]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service:
+                  - "lambda.amazonaws.com"
+              Action:
+                - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: !Join ["-"[!Ref S3Bucket, "s3-bucket-access"]]
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "*"
+                Resource:
+                  !Join [":",["arn:aws:s3::", !Join[""[!Ref S3Bucket,"/"]]],
+                  !Join [":",["arn:aws:s3::", !Join[""[!Ref S3Bucket,"/*"]]]
+       - PolicyName: !Join ["-"[!Ref QName, "sqs-receive"]]
+           PolicyDocument:
+             Version: "2012-10-17"
+             Statement:
+               - Effect: "Allow"
+                 Action: "SQS:ReceiveMessage"
+                 Resource:
+                   !Join [":",["arn:aws:sqs:", !Ref Region, !Ref Account, !Ref QName]]
+
+  PollingFunction:
+    Type: "AWS::Lambda::Function" # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Code:
+        S3Bucket: !Ref CodeBucket
+        S3Key: !Ref CodeFile
+      Handler: app.lambda_handler
+      Runtime: python3.6
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+            endpoint: !Ref QURL
+            max_messages: !Ref NumMessages
+            wait_time: !Ref MessagePollTime
+      Role: !Ref LambdaRole
+      MemorySize: !Ref Memory
+      Timeout: !Ref ExcTime
+      Layers:
+        !Ref LambdaLayers
+      #Events:
+      #  HelloWorld:
+      #    Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+      #    Properties:
+      #      Path: /hello
+      #      Method: get
+
+Outputs:
+
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+
+  HelloWorldFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt HelloWorldFunctionRole.Arn

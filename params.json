@@ -1,0 +1,35 @@
+[
+  {
+    "ParameterKey": "QName",
+    "ParameterValue": "sqsnotifications-sndbx"
+  },
+  {
+    "ParameterKey": "S3Bucket",
+    "ParameterValue": "sqsnotifications-sndbx"
+  },
+  {
+    "ParameterKey": "FunctionName",
+    "ParameterValue": "sqsnotifications-poller-sndbx"
+  },
+  {
+    "ParameterKey": "CodeBucket",
+    "ParameterValue": "lambda-deployment-realityctrl-sndbx"
+  },
+  {
+    "ParameterKey": "CodeFile",
+    "ParameterValue": "poller_code.zip"
+  },
+  {
+    "ParameterKey": "Region",
+    "ParameterValue": "eu-west-1"
+  },
+  {
+    "ParameterKey": "Account",
+    "ParameterValue": "838188513541"
+  },
+  {
+    "ParameterKey": "LambdaLayers",
+    "ParameterValue": "arn:aws:lambda:eu-west-1:838188513541:layer:test_layer:1"
+  }
+
+]
